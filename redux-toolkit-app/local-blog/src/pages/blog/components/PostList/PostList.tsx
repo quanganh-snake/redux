@@ -3,9 +3,11 @@ import PostItem from '../PostItem'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, useDispatchThunk } from 'store'
 import { useEffect } from 'react'
+import SkeletonPost from '../SkeletonPost'
 
 export default function PostList() {
   const postList = useSelector((state: RootState) => state.blog.postList)
+  const loading = useSelector((state: RootState) => state.blog.loading)
 
   const dispatch = useDispatchThunk()
 
@@ -43,13 +45,20 @@ export default function PostList() {
           </p>
         </div>
         <div className='-m-4 flex flex-wrap'>
-          {postList.map((post, indexedDB) => {
-            return (
-              <div key={post.id} className='p-4 md:w-1/2 xl:w-1/4'>
-                <PostItem post={post} onDeletePost={handleDeletePost} onStartEditingPost={handleStartEditingPost} />
-              </div>
-            )
-          })}
+          {loading && (
+            <>
+              <SkeletonPost />
+              <SkeletonPost />
+            </>
+          )}
+          {!loading &&
+            postList.map((post, indexedDB) => {
+              return (
+                <div key={post.id} className='w-1/2 p-4 xl:w-1/4'>
+                  <PostItem post={post} onDeletePost={handleDeletePost} onStartEditingPost={handleStartEditingPost} />
+                </div>
+              )
+            })}
         </div>
       </div>
     </section>
