@@ -1,9 +1,10 @@
-import { addPost } from 'pages/blog/blog.reducer'
-import { useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { addPost, cancelEditingPost, finishEditingPost } from 'pages/blog/blog.reducer'
+import { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { RootState } from 'store'
 import { Blog } from 'types/blog'
 
-const initialBlog: Blog = {
+const initialPost: Blog = {
   id: '',
   title: '',
   description: '',
@@ -13,17 +14,38 @@ const initialBlog: Blog = {
 }
 
 export default function CreatePost() {
-  const [formData, setFormData] = useState<Blog>(initialBlog)
+  const [formData, setFormData] = useState<Blog>(initialPost)
+  const editingPost = useSelector((state: RootState) => state.blog.editingPost)
+  const handlePost = useSelector((state: RootState) => state.blog.handlePost)
   const dispatch = useDispatch()
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const newFormData = { ...formData, id: new Date().toISOString() }
-    dispatch(addPost(newFormData))
+    if (handlePost === 'ADD_POST') {
+      const newFormData = { ...formData, id: new Date().toISOString() }
+      dispatch(addPost(newFormData))
+    }
+
+    if (handlePost === 'EDIT_POST') {
+      dispatch(finishEditingPost(formData))
+    }
+    setFormData(initialPost)
   }
 
+  const handleCancelEditingPost = () => {
+    dispatch(cancelEditingPost())
+  }
+
+  const handleUpdatePost = () => {
+    dispatch(finishEditingPost(formData))
+  }
+
+  useEffect(() => {
+    setFormData(editingPost || initialPost)
+  }, [editingPost])
+
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} onReset={handleCancelEditingPost}>
       <div className='mb-6'>
         <label htmlFor='title' className='mb-2 block text-sm font-medium text-gray-900 dark:text-white'>
           Title
@@ -92,24 +114,31 @@ export default function CreatePost() {
         </label>
       </div>
       <div className=''>
-        <button
-          type='submit'
-          className='mb-2 me-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800'
-        >
-          Publish Post
-        </button>
-        <button
-          type='button'
-          className='mb-2 me-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:outline-none focus:ring-4 focus:ring-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-700'
-        >
-          Update Post
-        </button>
-        <button
-          type='button'
-          className='mb-2 me-2 rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700'
-        >
-          Cancel
-        </button>
+        {!editingPost && (
+          <button
+            type='submit'
+            className='mb-2 me-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800'
+          >
+            Publish Post
+          </button>
+        )}
+        {editingPost && (
+          <>
+            <button
+              type='button'
+              onClick={handleUpdatePost}
+              className='mb-2 me-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:outline-none focus:ring-4 focus:ring-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-700'
+            >
+              Update Post
+            </button>
+            <button
+              type='reset'
+              className='mb-2 me-2 rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700'
+            >
+              Cancel
+            </button>
+          </>
+        )}
       </div>
     </form>
   )

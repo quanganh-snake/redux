@@ -1,11 +1,20 @@
+import { removePost, startEditingPost } from 'pages/blog/blog.reducer'
 import PostItem from '../PostItem'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from 'store'
 
 export default function PostList() {
   const postList = useSelector((state: RootState) => state.blog.postList)
 
-  console.log('🚀 ~ file: PostList.tsx:9 ~ PostList ~ postList:', postList)
+  const dispatch = useDispatch()
+
+  const handleDeletePost = (postId: string) => {
+    dispatch(removePost(postId))
+  }
+
+  const handleStartEditingPost = (postId: string) => {
+    dispatch(startEditingPost(postId))
+  }
 
   return (
     <section className='body-font text-gray-600'>
@@ -27,7 +36,7 @@ export default function PostList() {
           {postList.map((post, indexedDB) => {
             return (
               <div key={post.id} className='p-4 md:w-1/2 xl:w-1/4'>
-                <PostItem post={post} />
+                <PostItem post={post} onDeletePost={handleDeletePost} onStartEditingPost={handleStartEditingPost} />
               </div>
             )
           })}
