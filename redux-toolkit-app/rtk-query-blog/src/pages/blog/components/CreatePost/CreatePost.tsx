@@ -1,17 +1,19 @@
-import { unwrapResult } from '@reduxjs/toolkit'
-import { error } from 'console'
-import { addPost, cancelEditingPost, editPost } from 'pages/blog/blog.slice'
+import { nanoid, unwrapResult } from '@reduxjs/toolkit'
+import { useAddPostMutation, useGetPostQuery, useUpdatePostMutation } from 'pages/blog/blog.service'
+import { cancelEditingPost } from 'pages/blog/blog.slice'
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
+import { toast } from 'react-toastify'
 import { RootState, useDispatchThunk } from 'store'
 import { Blog } from 'types/blog'
+import { error } from 'console'
 
 interface ErrorForm {
   publishDate: string
 }
 
 const initialPost: Blog = {
-  id: '',
+  id: nanoid(),
   title: '',
   description: '',
   featureImage: '',
@@ -23,37 +25,38 @@ export default function CreatePost() {
   const [formData, setFormData] = useState<Blog>(initialPost)
   const [errorForm, setErrorForm] = useState<ErrorForm | null>(null)
   const editingPost = useSelector((state: RootState) => state.blog.editingPost)
-  const loading = useSelector((state: RootState) => state.blog.loading)
-  const dispatch = useDispatchThunk()
+  const postId = useSelector((state: RootState) => state.blog.postId)
+  const [addPost, addPostResult] = useAddPostMutation()
+  const [updatePost, updatePostResult] = useUpdatePostMutation()
 
+  // options: skip -> kiểm tra nếu postId ko có thì sẽ ko fetch
+  const { data: dataPostItem, isFetching: isPostItemFetching } = useGetPostQuery(postId, { skip: !postId })
+  // const [editPost, isFetching: isEditingPost] = useEditPostMutation()
   /**
    *
    * using unwrap | unwrapResult: dùng để lấy ra response của dispatch. Vì mặc định dispatch đã đóng gói data và trả về Redux
    *
    */
+  const dispatch = useDispatchThunk()
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (editingPost) {
-      dispatch(
-        editPost({
-          postId: editingPost?.id || '',
-          post: formData
-        })
-      )
+    if (postId) {
+      await updatePost({ id: postId, body: formData })
         .unwrap()
         .then(() => {
+          toast.success('Update post successfully')
           setFormData(initialPost)
-          if (errorForm) setErrorForm(null)
         })
         .catch((error) => {
-          setErrorForm(error.error)
+          setErrorForm(error.data.error)
         })
     } else {
-      try {
-        const res = await dispatch(addPost(formData))
-        unwrapResult(res)
-        setFormData(initialPost)
-      } catch (error) {}
+      await addPost(formData)
+        .unwrap()
+        .then(() => {
+          toast.success('Create post successfully')
+        })
+      setFormData(initialPost)
     }
   }
 
@@ -65,6 +68,11 @@ export default function CreatePost() {
     setFormData(editingPost || initialPost)
   }, [editingPost])
 
+  useEffect(() => {
+    if (dataPostItem) {
+      setFormData(dataPostItem)
+    }
+  }, [dataPostItem])
   return (
     <form onSubmit={handleSubmit} onReset={handleCancelEditingPost} className='grid grid-cols-2 items-center gap-2'>
       <div className='col-span-1'>
